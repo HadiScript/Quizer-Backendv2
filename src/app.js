@@ -13,7 +13,14 @@ const { NotFoundError } = require("./errors/not-found-error");
 const app = express();
 app.set("trust proxy", true);
 app.use(json());
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
+
+app.use(
+  cors({
+    origin: "https://quizer-frontend.vercel.app",
+    credentials: true,
+  })
+);
 app.use(
   cookieSession({
     signed: false,
