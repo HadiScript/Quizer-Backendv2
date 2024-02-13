@@ -15,18 +15,12 @@ app.set("trust proxy", true);
 app.use(json());
 app.use(cors(corsOptions));
 
-// app.use(
-//   cors({
-//     origin: ["https://quizer-frontend.vercel.app", "http://localhost:5173"],
-//     credentials: true,
-//   })
-// );
-// app.use(
-//   cookieSession({
-//     signed: false,
-//     secure: process.env.NODE_ENV === "production" || false,
-//   })
-// );
+app.use(
+  cookieSession({
+    signed: false,
+    secure: false,
+  })
+);
 
 // APIS
 app.use("/api/auth", require("./routers/auth"));
