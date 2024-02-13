@@ -37,7 +37,7 @@ const login = async (req, res) => {
     email: existingUser.email,
     role: existingUser.role,
   };
-  res.cookie("session", userJwt, { httpOnly: true, secure: true });
+  res.cookie("session", userJwt, { domain: "https://quizer-frontend.vercel.app", httpOnly: false, signed: true, secure: true, sameSite: "none" });
   res.status(200).send(user);
 };
 
