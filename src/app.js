@@ -17,16 +17,14 @@ app.use(json());
 
 app.use(
   cors({
-    origin: "https://quizer-frontend.vercel.app",
+    origin: ["https://quizer-frontend.vercel.app", "http://localhost:5173"],
     credentials: true,
   })
 );
 app.use(
   cookieSession({
     signed: false,
-    secure: true,
-    sameSite: "lax", // or 'none' if necessary
-    domain: "https://quizer-frontend.vercel.app",
+    secure: process.env.NODE_ENV === "production" || false,
   })
 );
 
