@@ -28,16 +28,16 @@ const login = async (req, res) => {
   );
 
   // Store it on session object
-  req.session = {
-    jwt: userJwt,
-  };
+  // req.session = {
+  //   jwt: userJwt,
+  // };
 
   let user = {
     name: existingUser.name,
     email: existingUser.email,
     role: existingUser.role,
   };
-
+  res.cookie("session", userJwt, { httpOnly: true, secure: true });
   res.status(200).send(user);
 };
 
@@ -78,7 +78,8 @@ const signup = async (req, res) => {
 };
 
 const logout = (req, res) => {
-  req.session = null;
+  // req.clearCookie = null;
+  res.clearCookie("session");
 
   res.send({});
 };

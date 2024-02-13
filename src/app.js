@@ -6,6 +6,7 @@ const path = require("path");
 const express = require("express");
 const { json } = require("body-parser");
 const cookieSession = require("cookie-session");
+const cookieParser = require("cookie-parser");
 const corsOptions = require("./config/cors/options");
 const { errorHandler } = require("./middlewares/error-handler");
 const { NotFoundError } = require("./errors/not-found-error");
@@ -15,15 +16,15 @@ app.set("trust proxy", true);
 app.use(json());
 app.use(cors(corsOptions));
 
-app.use(
-  cookieSession({
-    signed: true,
-    secure: true,
-    domain: "https://quizer-frontend.vercel.app",
-    sameSite: "none",
-    keys: "21313123124sdasd",
-  })
-);
+// app.use(
+//   cookieSession({
+//     secure: true,
+//     domain: "https://quizer-frontend.vercel.app",
+//     sameSite: "none",
+//   })
+// );
+
+app.use(cookieParser());
 
 // APIS
 app.use("/api/auth", require("./routers/auth"));

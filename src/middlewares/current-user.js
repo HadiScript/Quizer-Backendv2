@@ -3,12 +3,13 @@ const { NotAuthorizedError } = require("../errors/not-authorized-error");
 const User = require("../models/userSchema");
 
 const currentUser = (req, res, next) => {
-  if (!req.session?.jwt) {
+  // console.log(req.cookies.session);
+  if (!req.cookies.session) {
     return next();
   }
 
   try {
-    const payload = jwt.verify(req.session.jwt, process.env.JWT_KEY);
+    const payload = jwt.verify(req.cookies.session, process.env.JWT_KEY);
     req.currentUser = payload;
   } catch (err) {}
 
