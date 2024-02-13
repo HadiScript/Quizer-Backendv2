@@ -28,9 +28,9 @@ const login = async (req, res) => {
   );
 
   // Store it on session object
-  req.session = {
-    jwt: userJwt,
-  };
+  // req.session = {
+  //   jwt: userJwt,
+  // };
 
   let user = {
     name: existingUser.name,
@@ -38,7 +38,7 @@ const login = async (req, res) => {
     role: existingUser.role,
   };
 
-  res.status(200).send(user);
+  res.status(200).send({ user, token: userJwt });
 };
 
 const signup = async (req, res) => {
@@ -64,9 +64,9 @@ const signup = async (req, res) => {
 
   // store it on the session object
   // req.session.jwt = userJwt; not in Typescript
-  req.session = {
-    jwt: userJwt,
-  };
+  // req.session = {
+  //   jwt: userJwt,
+  // };
 
   let userData = {
     name: user.name,
@@ -74,7 +74,7 @@ const signup = async (req, res) => {
     role: user.role,
   };
 
-  res.status(201).send({ user: userData });
+  res.status(201).send({ user: userData, token });
 };
 
 const logout = (req, res) => {
