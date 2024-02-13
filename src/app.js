@@ -18,7 +18,9 @@ app.use(cors(corsOptions));
 app.use(
   cookieSession({
     signed: false,
-    secure: true,
+    secure: process.env.NODE_ENV === "production" ? true : false,
+    domain: process.env.NODE_ENV === "production" ? "https://quizer-frontend.vercel.app" : undefined,
+    sameSite: "none",
   })
 );
 
