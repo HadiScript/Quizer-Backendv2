@@ -24,7 +24,7 @@ app.use(cors(corsOptions));
 //   })
 // );
 
-app.use(cookieParser());
+app.use(cookieParser("123456poeroqewuroihjwekjhdsfkjsdkfjh"));
 
 // APIS
 app.use("/api/auth", require("./routers/auth"));
