@@ -17,10 +17,11 @@ app.use(cors(corsOptions));
 
 app.use(
   cookieSession({
-    signed: false,
-    secure: process.env.NODE_ENV === "production" ? true : false,
-    domain: process.env.NODE_ENV === "production" ? "https://quizer-frontend.vercel.app" : undefined,
+    signed: true,
+    secure: true,
+    domain: "https://quizer-frontend.vercel.app",
     sameSite: "none",
+    keys: "21313123124sdasd",
   })
 );
 
