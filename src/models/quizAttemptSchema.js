@@ -2,11 +2,6 @@ const mongoose = require("mongoose");
 
 const quizAttemptSchema = new mongoose.Schema({
   quiz: { type: mongoose.Schema.Types.ObjectId, ref: "Quiz", required: true },
-  // studentDetails: {
-  //   name: String,
-  //   phone: String,
-  //   email: String,
-  // },
 
   studentDetails: {
     type: mongoose.Schema.Types.Mixed,
@@ -23,6 +18,7 @@ const quizAttemptSchema = new mongoose.Schema({
   submitType: { type: String, enum: ["time-up", "within-time"], default: "within-time" },
   startTime: { type: Date },
   endTime: { type: Date },
+  certified: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now() },
 });
 

@@ -1,9 +1,14 @@
+const sharp = require("sharp");
+const moment = require("moment");
+
 const convertScoreToGrade = require("../../config/helpers/Grading");
+const { convertHtmlToWebp } = require("../../config/helpers/converter");
 const isUserPassing = require("../../config/helpers/isUserPadding");
 const { BadRequestError } = require("../../errors/bad-request-error");
 const QuestionModel = require("../../models/questionSchema");
 const QuizAttemptModel = require("../../models/quizAttemptSchema");
 const QuizModel = require("../../models/quizSchema");
+const Template = require("../../models/templates");
 const User = require("../../models/userSchema");
 
 // post requests;
@@ -71,8 +76,6 @@ const finishQuiz = async (req, res) => {
   const scoringType = quizSettings.scoringType || userSettings.scoringType;
   const passingScore = quizSettings.passingScore || userSettings.passingScore;
 
-  // console.log(typeof passingScore, passingScore);
-
   // Fetch all questions referenced in the responses in a single query
   const questionIds = responses.map((response) => response.questionId);
   const questions = await QuestionModel.find({ _id: { $in: questionIds } });
@@ -108,7 +111,6 @@ const finishQuiz = async (req, res) => {
   if (scoringType === "percentage") {
     score = (score / totalQuestions) * 100;
   } else if (scoringType === "grade") {
-    // Convert score to grade here if needed
     grade = convertScoreToGrade(score, totalQuestions);
   }
 
@@ -124,7 +126,6 @@ const finishQuiz = async (req, res) => {
   await quizAttempt.save();
 
   let _score = grade ? grade : score;
-
   if (!showScore) {
     return res.status(200).json({ message: "Quiz attempt finished, Score is hidden" });
   }
@@ -150,6 +151,7 @@ const getQuizByCreatorAndQuizId = async (req, res) => {
         timeLimit: quiz.timeLimit,
         requiredFields: quiz.requiredFields,
         settings: quiz.settings,
+        quizInstructions: quiz.quizInstructions,
       };
 
       return res.json({ quizData });
@@ -170,6 +172,7 @@ const getQuizByCreatorAndQuizId = async (req, res) => {
       title: quiz.title,
       timeLimit: quiz.timeLimit,
       requiredFields: quiz.requiredFields,
+      quizInstructions: quiz.quizInstructions,
     };
     // console.log("yes");
     return res.status(200).json({ quizData });
@@ -212,6 +215,68 @@ const getQuizForAttempt = async (req, res) => {
   return res.status(200).json(quizData);
 };
 
+const thanksAttemptingQuiz = async (req, res) => {
+  const { quizId, attemptId } = req.params;
+
+  const quiz = await QuizModel.findById(quizId)
+    .populate({
+      path: "creator",
+      select: { globalSettings: 1 },
+    })
+    .select({ creator: 1, settings: 1, questions: 1 });
+
+  const quizSettings = quiz.settings || {};
+  const userSettings = quiz.creator.globalSettings || {};
+  const mode = quizSettings.mode || userSettings.mode;
+  const showScore = quizSettings.showScore || userSettings.showScore;
+
+  if (mode === "practice" && !showScore) {
+    return res.json({ ok: true }); // means just show an message for thank you
+  }
+
+  const attempt = await QuizAttemptModel.findById(attemptId);
+
+  const scoringType = quizSettings.scoringType || userSettings.scoringType;
+
+  const showCertificate = quizSettings.showCertificate;
+  const certificateId = quizSettings.certificateId;
+
+  let totalQuestions = attempt.responses.length;
+  let score = attempt.score;
+  let grade;
+
+  if (scoringType === "grade") {
+    grade = convertScoreToGrade(score, totalQuestions);
+  }
+
+  if (scoringType === "percentage") {
+    score = score.toPrecision(2) + "%";
+  }
+
+  let _score = scoringType === "grade" ? grade : score;
+
+  if (mode === "practice") {
+    return res.json({ score: _score });
+  } else if (showCertificate) {
+    const template = await Template.findById(certificateId);
+    let finalHtml = template.htmlContent;
+    finalHtml = finalHtml.replace("{{name}}", attempt.studentDetails?.name ? attempt.studentDetails?.name : attempt.studentDetails?.Email);
+    finalHtml = finalHtml.replace("{{date}}", moment(Date.now()).format("MMM Do YY"));
+    const imageContent = await convertHtmlToWebp(finalHtml);
+    const webPImageBuffer = await sharp(imageContent).webp().toBuffer();
+    const imageBase64 = webPImageBuffer.toString("base64");
+
+    res.setHeader("Content-Type", "image/webp");
+    res.setHeader("Content-Disposition", `attachment; filename=certificate-${template._id}.webp`);
+    res.json({
+      showDownloadCertificate: true,
+      certificate: `data:image/webp;base64,${imageBase64}`,
+    });
+  } else {
+    return res.json({ score: _score });
+  }
+};
+
 module.exports = {
   // post requests;
   startQuiz,
@@ -220,4 +285,5 @@ module.exports = {
   // get requests;
   getQuizByCreatorAndQuizId,
   getQuizForAttempt,
+  thanksAttemptingQuiz,
 };

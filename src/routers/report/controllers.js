@@ -100,7 +100,7 @@ const getToughestQuestion = async (req, res) => {
 
   const questions = await QuestionModel.find({ quiz: quizId });
 
-  const result = await AttachingToughestQuestions(questions, quizId);
+  const result = await AttachingToughestQuestions(questions, quizId, res);
 
   res.json({ result });
 };
@@ -152,8 +152,73 @@ const PassingRatioForPeiChart = async (req, res) => {
   return res.status(200).json({ result });
 };
 
+const reportForAll = async (req, res) => {
+  const { from } = req.query;
+
+  const creatorId = new mongoose.Types.ObjectId(req.currentUser.id);
+
+  if (from === "summary") {
+    const quizSummary = await QuizModel.aggregate([
+      {
+        $match: {
+          creator: creatorId,
+        },
+      },
+      {
+        $lookup: {
+          from: "quizattempts", // This should match the collection name of quiz attempts in MongoDB
+          localField: "_id",
+          foreignField: "quiz",
+          as: "attempts",
+        },
+      },
+      {
+        $unwind: {
+          path: "$attempts",
+          preserveNullAndEmptyArrays: true, // Keep quizzes even if they have no attempts
+        },
+      },
+      {
+        $group: {
+          _id: "$creator",
+          totalQuizzes: { $sum: 1 },
+          totalQuestions: { $sum: { $size: "$questions" } },
+          totalAttempts: { $sum: { $cond: [{ $gt: ["$attempts", null] }, 1, 0] } }, // Increment for each non-null attempt
+        },
+      },
+    ]);
+    return res.json({ summary: quizSummary[0] });
+  } else if (from === "graph") {
+    const quizSummary = await QuizModel.aggregate([
+      {
+        $match: {
+          creator: creatorId,
+        },
+      },
+      {
+        $lookup: {
+          from: "quizattempts", // Ensure this matches the actual collection name in your database
+          localField: "_id",
+          foreignField: "quiz",
+          as: "attempts",
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          attemptsCount: { $size: "$attempts" },
+        },
+      },
+    ]);
+
+    res.json({ quizSummary });
+  }
+};
+
 module.exports = {
-  // get requests;
+  // get requests;'
+  reportForAll,
   ReportOfQuiz,
   QuizAttempters,
   QuizAttemptersResponses,

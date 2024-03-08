@@ -3,13 +3,17 @@ const { NotAuthorizedError } = require("../../errors/not-authorized-error");
 const QuestionModel = require("../../models/questionSchema");
 const QuizModel = require("../../models/quizSchema");
 const slugify = require("slugify");
+const User = require("../../models/userSchema");
 
-// post requests;
-const createQuiz = async (req, res) => {
-  const { title, requiredFields, timeLimit, maxAttempts } = req.body;
-
+const createQuizHelper = async (req, title, requiredFields, timeLimit, quizInstructions) => {
   if (!requiredFields || !requiredFields.includes("Email")) {
     throw new BadRequestError("Email must be included in required fields");
+  }
+
+  const userQuiz = await QuizModel.find({ creator: req.currentUser.id });
+  // console.log({ userQuiz });
+  if (userQuiz.find((x) => x.slug.toLowerCase() === slugify(title).toLowerCase())) {
+    throw new BadRequestError("This quiz is already exist.");
   }
 
   const newQuiz = new QuizModel({
@@ -18,12 +22,21 @@ const createQuiz = async (req, res) => {
     slug: slugify(title),
     requiredFields,
     timeLimit,
+    quizInstructions,
     maxAttempts: 0,
     questions: [],
   });
 
   await newQuiz.save();
 
+  return newQuiz;
+};
+
+// post requests;
+const createQuiz = async (req, res) => {
+  const { title, requiredFields, timeLimit, quizInstructions } = req.body;
+
+  let newQuiz = createQuizHelper(req, title, requiredFields, timeLimit, quizInstructions);
   res.json({ message: "Quiz has been created", quiz: newQuiz });
 };
 
@@ -38,7 +51,7 @@ const allQuizes = async (req, res) => {
 };
 
 const quizById = async (req, res) => {
-  const quiz = await QuizModel.findOne({ _id: req.params.quizId });
+  const quiz = await QuizModel.findById({ _id: req.params.quizId });
   res.status(200).json({ quiz });
 };
 
@@ -56,7 +69,7 @@ const getQuizSettings = async (req, res) => {
 // put requests;
 const updateQuizById = async (req, res) => {
   const { quizId } = req.params;
-  const { title, requiredFields, timeLimit, maxAttempts } = req.body;
+  const { title, requiredFields, timeLimit, maxAttempts, quizInstructions } = req.body;
 
   if (!requiredFields || !requiredFields.includes("Email")) {
     throw new BadRequestError("Email must be included in required fields.");
@@ -74,6 +87,7 @@ const updateQuizById = async (req, res) => {
       requiredFields,
       timeLimit,
       maxAttempts,
+      quizInstructions,
     },
     { new: true }
   );
@@ -88,18 +102,21 @@ const updateQuizById = async (req, res) => {
 // delete requests;
 const updateQuizSettingsById = async (req, res) => {
   const { quizId } = req.params;
-  const { quizTimer, quizAvailability, displaySetting, mode, passingScore, scoringType, showScore } = req.body;
+  const { quizAvailability, displaySetting, mode, passingScore, scoringType, showScore, showCertificate, certificateId } = req.body;
 
   const quizCreator = await QuizModel.findById(quizId);
+  const user = await User.findById({ _id: req.currentUser.id });
   if (quizCreator.creator.toString() !== req.currentUser.id.toString()) {
     throw new BadRequestError("You can't access this quiz");
   }
 
-  const quizSettings = {};
-
-  if (quizTimer) {
-    quizSettings.quizTimer = quizTimer;
+  if (user.subscriptionType === "free") {
+    if (quizAvailability || displaySetting || scoringType) {
+      throw new BadRequestError("Please update your account. You have right to perform this action.");
+    }
   }
+
+  const quizSettings = {};
 
   if (mode) {
     quizSettings.mode = mode;
@@ -118,6 +135,12 @@ const updateQuizSettingsById = async (req, res) => {
 
   if (showScore) {
     quizSettings.showScore = showScore;
+  }
+  if (showCertificate) {
+    quizSettings.showCertificate = showCertificate;
+  }
+  if (certificateId) {
+    quizSettings.certificateId = certificateId;
   }
 
   if (quizAvailability) {
@@ -169,6 +192,7 @@ const deleteQuizById = async (req, res) => {
 module.exports = {
   // post
   createQuiz,
+  createQuizHelper,
 
   // get
   allQuizes,

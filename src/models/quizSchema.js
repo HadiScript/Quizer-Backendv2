@@ -4,6 +4,7 @@ const quizSchema = new mongoose.Schema({
   creator: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   title: { type: String, required: true },
   slug: { type: String, required: true, unqie: true },
+  quizInstructions: {},
   questions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Question" }],
   // requiredFields: [{ type: String, enum: ["name", "phone", "email", "others"] }],
   requiredFields: {
@@ -25,8 +26,7 @@ const quizSchema = new mongoose.Schema({
 
   // settings
   settings: {
-    quizTimer: Number, // in minutes
-    showScore: { type: Boolean, default: true },
+    showScore: { type: Boolean, default: false },
     quizAvailability: {
       start: Date,
       end: Date,
@@ -35,6 +35,8 @@ const quizSchema = new mongoose.Schema({
     mode: { type: String, enum: ["practice", "exam"] },
     passingScore: Number,
     scoringType: { type: String, enum: ["grade", "percentage"] },
+    showCertificate: { type: Boolean, default: false },
+    certificateId: { type: mongoose.Schema.Types.ObjectId, ref: "Template" },
   },
 });
 

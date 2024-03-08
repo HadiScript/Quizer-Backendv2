@@ -1,14 +1,21 @@
-const { app } = require("./src/app");
-const connectDB = require("./src/config/datebase/db");
-const express = require("express");
+const cluster = require("cluster");
 
-require("dotenv").config();
+if (cluster.isMaster) {
+  cluster.fork();
+  cluster.fork();
+} else {
+  const { app } = require("./src/app");
+  const connectDB = require("./src/config/datebase/db");
+  const express = require("express");
 
-const startUp = async () => {
-  await connectDB();
-  app.listen(process.env.PORT || 8080, () => {
-    console.log("Listening on port 8080!");
-  });
-};
+  require("dotenv").config();
 
-startUp();
+  const startUp = async () => {
+    await connectDB();
+    app.listen(process.env.PORT || 8080, () => {
+      console.log("Listening on port 8080!");
+    });
+  };
+
+  startUp();
+}

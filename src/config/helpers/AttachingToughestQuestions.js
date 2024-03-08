@@ -1,6 +1,6 @@
 const QuizAttemptModel = require("../../models/quizAttemptSchema");
 
-const AttachingToughestQuestions = async (questions, quizId) => {
+const AttachingToughestQuestions = async (questions, quizId, res) => {
   let correctAnswers = {};
   questions.forEach((question) => {
     if (question.type === "multiple-choice") {

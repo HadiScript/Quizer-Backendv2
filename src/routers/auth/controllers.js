@@ -3,21 +3,18 @@ const jwt = require("jsonwebtoken");
 const User = require("../../models/userSchema");
 const { Password } = require("../../config/Password");
 const { BadRequestError } = require("../../errors/bad-request-error");
+const { default: axios } = require("axios");
 
 const login = async (req, res) => {
   const { email, password } = req.body;
-
   const existingUser = await User.findOne({ email });
   if (!existingUser) {
     throw new BadRequestError("This email is not registered yet. Please SignUp.");
   }
-
   const passwordsMatch = await Password.compare(existingUser.password, password);
-
   if (!passwordsMatch) {
     throw new BadRequestError("Invalid Credentials");
   }
-
   // Generate JWT
   const userJwt = jwt.sign(
     {
@@ -27,18 +24,83 @@ const login = async (req, res) => {
     process.env.JWT_KEY
   );
 
-  // Store it on session object
-  // req.session = {
-  //   jwt: userJwt,
-  // };
+  let user = {
+    name: existingUser.name,
+    email: existingUser.email,
+    role: existingUser.role,
+    type: existingUser.subscriptionType,
+    logo: existingUser.logo,
+  };
+  res.status(200).send({ user, token: userJwt });
+};
+
+const loginWithGoogle = async (req, res) => {
+  const { googleAccessToken } = req.body;
+  const { data } = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
+    headers: {
+      Authorization: `Bearer ${googleAccessToken}`,
+    },
+  });
+
+  const email = data.email;
+  const existingUser = await User.findOne({ email });
+  if (!existingUser) {
+    throw new BadRequestError("This email is not registered yet. Please SignUp.");
+  }
+
+  const userJwt = jwt.sign(
+    {
+      id: existingUser._id,
+      email: existingUser.email,
+    },
+    process.env.JWT_KEY
+  );
 
   let user = {
     name: existingUser.name,
     email: existingUser.email,
     role: existingUser.role,
+    type: existingUser.subscriptionType,
+    logo: existingUser.logo,
   };
-  // res.cookie("session", userJwt, { domain: "https://quizer-frontend.vercel.app", httpOnly: false, signed: true, secure: true, sameSite: "none" });
   res.status(200).send({ user, token: userJwt });
+};
+
+const signupWithGoogle = async (req, res) => {
+  const { googleAccessToken } = req.body;
+
+  const { data } = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
+    headers: {
+      Authorization: `Bearer ${googleAccessToken}`,
+    },
+  });
+  const email = data.email;
+  const name = data.name;
+
+  const existingUser = await User.findOne({ email });
+
+  if (existingUser) {
+    throw new BadRequestError("Email in use");
+  }
+
+  const user = new User({ email, name });
+  await user.save();
+
+  const userJwt = jwt.sign(
+    {
+      id: user._id,
+      email: user.email,
+    },
+    process.env.JWT_KEY
+  );
+
+  let userData = {
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    type: user.subscriptionType,
+  };
+  res.status(200).send({ user: userData, token: userJwt });
 };
 
 const signup = async (req, res) => {
@@ -53,7 +115,6 @@ const signup = async (req, res) => {
   const user = new User({ email, password, name });
   await user.save();
 
-  // gen jwt token
   const userJwt = jwt.sign(
     {
       id: user._id,
@@ -62,19 +123,13 @@ const signup = async (req, res) => {
     process.env.JWT_KEY
   );
 
-  // store it on the session object
-  // req.session.jwt = userJwt; not in Typescript
-  req.session = {
-    jwt: userJwt,
-  };
-
   let userData = {
     name: user.name,
     email: user.email,
     role: user.role,
+    type: user.subscriptionType,
   };
-
-  res.status(201).send({ user: userData });
+  res.status(200).send({ user: userData, token: userJwt });
 };
 
 const logout = (req, res) => {
@@ -99,8 +154,28 @@ const currentSubs = async (req, res) => {
     });
   }
 };
+
 const currentAdmins = async (req, res) => {
   return res.send({ currentUser: req.currentUser || null });
+};
+
+const updatePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  const user = await User.findById(req.currentUser.id);
+  if (!user) {
+    throw new BadRequestError("User not found.");
+  }
+
+  const passwordsMatch = await Password.compare(user.password, currentPassword);
+  if (!passwordsMatch) {
+    throw new BadRequestError("Your current password is incorrect.");
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  res.json({ message: "Password updated successfully." });
 };
 
 module.exports = {
@@ -109,4 +184,7 @@ module.exports = {
   logout,
   currentSubs,
   currentAdmins,
+  loginWithGoogle,
+  signupWithGoogle,
+  updatePassword,
 };

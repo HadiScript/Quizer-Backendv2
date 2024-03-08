@@ -5,14 +5,12 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    password: { type: String },
+    googleId: { type: String },
     role: { type: String, default: "subscriber", enum: ["admin", "subscriber"] },
     createdQuizzes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Quiz" }],
-    subscriptionType: { type: String, default: "free", enum: ["free", "premium"] },
     createdAt: { type: Date, default: Date.now() },
-    // Additional fields like profile information can be added here
-
-    // Global Settings
+    subscriptionType: { type: String, default: "free", enum: ["free", "premium"] },
     globalSettings: {
       quizTimer: Number,
       mode: { type: String, enum: ["practice", "exam"] },
@@ -20,6 +18,8 @@ const userSchema = new mongoose.Schema(
       showScore: { type: Boolean, default: true },
       scoringType: { type: String, enum: ["grade", "percentage"] },
     },
+
+    logo: { type: String },
   },
   {
     toJSON: {
