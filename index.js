@@ -17,5 +17,5 @@ const startUp = async () => {
   });
 };
 
-//   startUp();
+startUp();
 // }
