@@ -5,18 +5,9 @@ const cors = require("cors");
 const path = require("path");
 const express = require("express");
 const { json } = require("body-parser");
-const cookieSession = require("cookie-session");
-const cookieParser = require("cookie-parser");
 const corsOptions = require("./config/cors/options");
 const { errorHandler } = require("./middlewares/error-handler");
 const { NotFoundError } = require("./errors/not-found-error");
-
-const session = require("express-session");
-const passport = require("passport");
-const oAuth2 = require("passport-google-oauth2").Strategy;
-
-const clientId = "779716474567-ga0p4osg530hq2rg4vbqi8q4pi0ute41.apps.googleusercontent.com";
-const clientSecret = "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";
 
 const app = express();
 app.use(json());
