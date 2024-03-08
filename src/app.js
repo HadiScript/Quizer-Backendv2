@@ -26,8 +26,9 @@ app.use("/api/template", require("./routers/template"));
 
 if (process.env.NODE_ENV === "production") {
   console.log(process.env.NODE_ENV);
-  app.use(express.static(path.join(__dirname, "mine/dist")));
-  app.get("*", (req, res) => res.sendFile(path.resolve(__dirname, "mine", "dist", "index.html")));
+  app.get("/", (req, res) => {
+    res.send("API is running....");
+  });
 } else {
   console.log(process.env.NODE_ENV);
   app.get("/", (req, res) => {
