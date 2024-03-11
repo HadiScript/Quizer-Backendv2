@@ -9,73 +9,68 @@ const AttachingToughestQuestions = require("../../config/helpers/AttachingToughe
 const ReportOfQuiz = async (req, res) => {
   const { quizId } = req.params;
 
-  const totalAttempts = await QuizAttemptModel.countDocuments({ quiz: quizId });
-
-  const averageScore = await QuizAttemptModel.aggregate([
-    { $match: { quiz: new mongoose.Types.ObjectId(quizId) } },
-
-    // Group by quiz ID and calculate the average score
-    {
-      $group: {
-        _id: "$quiz",
-        averageScore: { $avg: "$score" },
+  const [totalAttempts, averageScore, attempts, attemptedUsers, passFailCounts] = await Promise.all([
+    QuizAttemptModel.countDocuments({ quiz: quizId }),
+    QuizAttemptModel.aggregate([
+      {
+        $match: { quiz: new mongoose.Types.ObjectId(quizId) },
       },
-    },
-  ]);
-  const attempts = await QuizAttemptModel.aggregate([
-    { $match: { quiz: new mongoose.Types.ObjectId(quizId) } },
-    {
-      $group: {
-        _id: {
-          year: { $year: "$createdAt" },
-          month: { $month: "$createdAt" },
-          day: { $dayOfMonth: "$createdAt" },
+      {
+        $group: {
+          _id: "$quiz",
+          averageScore: { $avg: "$score" },
         },
-        count: { $sum: 1 },
       },
-    },
-    {
-      $project: {
-        _id: 0,
-        year: "$_id.year",
-        month: "$_id.month",
-        day: "$_id.day",
-        count: 1,
+    ]),
+    QuizAttemptModel.aggregate([
+      {
+        $match: { quiz: new mongoose.Types.ObjectId(quizId) },
       },
-    },
-    {
-      $project: {
-        date: {
-          $dateToString: {
-            format: "%Y-%m-%d",
-            date: {
-              $dateFromParts: {
-                year: "$year",
-                month: "$month",
-                day: "$day",
-              },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$createdAt",
             },
           },
+          count: { $sum: 1 },
         },
-        count: 1,
       },
-    },
-    {
-      $sort: {
-        date: 1, // 1 for ascending, -1 for descending
+      {
+        $sort: { _id: 1 },
       },
-    },
+    ]),
+    QuizAttemptModel.find({ quiz: quizId }).limit(10),
+    QuizAttemptModel.aggregate([
+      {
+        $match: { quiz: new mongoose.Types.ObjectId(quizId) },
+      },
+      {
+        $group: {
+          _id: "$isPass",
+          count: { $sum: 1 },
+        },
+      },
+    ]),
   ]);
 
-  const attemptedUsers = await QuizAttemptModel.find({ quiz: quizId }).limit(10);
+  const passFailCountsObject = passFailCounts.reduce((acc, curr) => {
+    acc[curr._id ? "Pass" : "Fail"] = curr.count;
+    return acc;
+  }, {});
 
-  // console.log({ totalAttempts, averageScore: averageScore[0]?.averageScore, attempts, attemptedUsers });
+  const result = [
+    { name: "Pass", value: passFailCountsObject.Pass || 0 },
+    { name: "Fail", value: passFailCountsObject.Fail || 0 },
+  ];
 
   res.json({
     totalAttempts,
-    averageScore: averageScore[0]?.averageScore,
+    averageScore: averageScore[0]?.averageScore || 0,
     attempts,
     attemptedUsers,
+    result,
   });
 };
 
@@ -214,6 +209,22 @@ const reportForAll = async (req, res) => {
 
     res.json({ quizSummary });
   }
+};
+
+// passing Ratio, toughest questions
+//
+const reportForPerQuiz = async (req, res) => {
+  const { quizId } = req.params;
+
+  const quizAttempts = await QuizAttemptModel.find({ quiz: quizId });
+
+  const passCount = quizAttempts.filter((attempt) => attempt.isPass === true).length;
+  const failCount = quizAttempts.filter((attempt) => attempt.isPass === false).length;
+
+  const result = [
+    { name: "Pass", value: passCount },
+    { name: "Fail", value: failCount },
+  ];
 };
 
 module.exports = {
