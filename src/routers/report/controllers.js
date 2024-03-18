@@ -160,7 +160,7 @@ const reportForAll = async (req, res) => {
       },
       {
         $lookup: {
-          from: "quizattempts", // This should match the collection name of quiz attempts in MongoDB
+          from: "quizAttemptSchema",
           localField: "_id",
           foreignField: "quiz",
           as: "attempts",
@@ -169,7 +169,7 @@ const reportForAll = async (req, res) => {
       {
         $unwind: {
           path: "$attempts",
-          preserveNullAndEmptyArrays: true, // Keep quizzes even if they have no attempts
+          preserveNullAndEmptyArrays: true, 
         },
       },
       {
