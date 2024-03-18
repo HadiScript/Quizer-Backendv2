@@ -102,12 +102,11 @@ const getToughestQuestion = async (req, res) => {
 
 const AttemptUsers = async (req, res) => {
   // Extract query parameters or set default values
-  const quizId = req.params.quizId; // Get quizId from URL parameters
+  const quizId = req.params.quizId; 
   const page = parseInt(req.query.page) || 1;
   const pageSize = parseInt(req.query.pageSize) || 10;
   const searchEmail = req.query.email;
 
-  // Build the query for the specified quiz and searching by email (if provided)
   const query = { quiz: quizId };
   if (searchEmail) {
     query["studentDetails.Email"] = { $regex: new RegExp(searchEmail, "i") };

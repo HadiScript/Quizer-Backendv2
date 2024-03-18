@@ -49,7 +49,10 @@ const addQuestionToQuiz = async (req, res) => {
 // get requests;
 const getAllQuestionsForQuiz = async (req, res) => {
   const { quizId } = req.params;
-  const { limits, whichQuestions, page = 1, pageSize = 10, searchTerm } = req.query;
+
+  const limits = req.query.limits;
+  const searchTerm = req.query.searchTerm;
+  const whichQuestions = req.query.whichQuestions;
 
   const quizExists = await QuizModel.findById({ _id: quizId });
   if (!quizExists) {
@@ -60,29 +63,22 @@ const getAllQuestionsForQuiz = async (req, res) => {
     throw new BadRequestError("You can't access to this quiz");
   }
 
-  // Calculate the number of documents to skip
-  const skip = (page - 1) * pageSize;
-
   let query = { quiz: quizId };
-
-  // Optional: If you want to allow searching by question text
   if (searchTerm) {
-    query = { ...query, text: new RegExp(searchTerm, "i") }; // 'i' for case-insensitive
+    query = { ...query, text: new RegExp(searchTerm, "i") };
   }
 
   if (whichQuestions === "true") {
-    const questions = await QuestionModel.find({ quiz: quizId });
+    const questions = await QuestionModel.find(query);
     const result = await AttachingToughestQuestions(questions, quizId, res);
-    console.log({ result: result.length });
-    res.status(200).json({ message: "Questions retrieved successfully", questions: result });
+    return res.status(200).json({ message: "Questions retrieved successfully", questions: result });
   } else {
-    const questions = await QuestionModel.find(query)
-      .sort({ position: 1 })
-      .skip(skip)
-      .limit(parseInt(limits) || parseInt(pageSize))
-      .select("_id text position");
+    const questions = await QuestionModel.find(query).sort({ position: 1 }).limit(parseInt(limits)).select("_id text position");
 
-    res.status(200).json({ message: "Questions retrieved successfully", questions });
+    return res.status(200).json({
+      message: "Questions retrieved successfully",
+      questions,
+    });
   }
 };
 
