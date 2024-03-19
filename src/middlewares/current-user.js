@@ -3,7 +3,6 @@ const { NotAuthorizedError } = require("../errors/not-authorized-error");
 const User = require("../models/userSchema");
 
 const currentUser = (req, res, next) => {
-  // console.log(req.headers.session);
   if (!req.headers.session) {
     return next();
   }
@@ -17,6 +16,7 @@ const currentUser = (req, res, next) => {
 };
 
 const currentsubs = async (req, res, next) => {
+  console.log("hi");
   if (!req.currentUser) {
     throw new NotAuthorizedError();
   }

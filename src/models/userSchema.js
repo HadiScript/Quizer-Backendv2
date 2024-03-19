@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema(
       quizTimer: Number,
       mode: { type: String, enum: ["practice", "exam"] },
       passingScore: Number,
-      showScore: { type: Boolean, default: true },
+      showScore: { type: Boolean, default: false },
       scoringType: { type: String, enum: ["grade", "percentage"] },
     },
 

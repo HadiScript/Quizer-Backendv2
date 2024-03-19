@@ -55,7 +55,7 @@ const updateGlobalSettings = async (req, res) => {
 
   if (user.subscriptionType === "free") {
     if (showScore || scoringType) {
-      throw new BadRequestError("Please update your account. You have right to perform this action.");
+      throw new BadRequestError("Please update your account. You don't have right to perform this action.");
     }
   }
 
@@ -105,8 +105,10 @@ const updateToPremium = async (req, res) => {
       },
     ],
     mode: "subscription",
-    success_url: `http://localhost:5173/pass?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: "http://localhost:5173/fail",
+    // https://quizer-frontend.vercel.app/
+    // http://localhost:5173
+    success_url: `https://quizer-frontend.vercel.app/pass?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: "https://quizer-frontend.vercel.app/fail",
   });
 
   res.json({ sessionId: session.id });
