@@ -20,7 +20,7 @@ const fieldSchema = new Schema({
   placeholder: String, // For text, email
   min: Number, // For range
   max: Number, // For range
-  maxRate: Number,
+  maxRate: { type: Number, default: 5 },
 });
 
 // Define the schema for the survey
