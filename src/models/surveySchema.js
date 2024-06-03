@@ -11,7 +11,7 @@ const fieldOptionsSchema = new Schema({
 const fieldSchema = new Schema({
   type: {
     type: String,
-    enum: ["radio", "dropdown", "checkbox", "email", "text", "range", "date"],
+    enum: ["radio", "dropdown", "checkbox", "email", "text", "range", "date", "rate"],
     required: true,
   },
   label: { type: String, required: true },
@@ -20,6 +20,7 @@ const fieldSchema = new Schema({
   placeholder: String, // For text, email
   min: Number, // For range
   max: Number, // For range
+  maxRate: Number,
 });
 
 // Define the schema for the survey
