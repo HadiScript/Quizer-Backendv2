@@ -9,6 +9,10 @@ const {
   AttemptUsers,
   PassingRatioForPeiChart,
   reportForAll,
+  getHighScores,
+  getScoreDistribution,
+  getAverageTimeSpent,
+  getCompletionRate,
 } = require("./controllers");
 
 const router = express.Router();
@@ -21,5 +25,10 @@ router.get("/responses/:attemptId", currentUser, currentsubs, QuizAttemptersResp
 router.get("/toughest/:quizId", currentUser, currentsubs, getToughestQuestion);
 router.get("/attempter/:quizId", currentUser, currentsubs, AttemptUsers);
 router.get("/passing-ratio/:quizId", currentUser, currentsubs, PassingRatioForPeiChart);
+
+router.get("/highest-score/users/:quizId", currentUser, currentsubs, getHighScores);
+router.get("/score-distribution/:quizId", currentUser, currentsubs, getScoreDistribution);
+router.get("/avg-time/:quizId", currentUser, currentsubs, getAverageTimeSpent);
+router.get("/completion-rate/:quizId", currentUser, currentsubs, getCompletionRate);
 
 module.exports = router;

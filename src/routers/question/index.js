@@ -7,6 +7,7 @@ const {
   addQuestionToQuiz,
   getQuestionById,
   editQuestion,
+  disableQuestion,
 } = require("./controllers");
 const { body } = require("express-validator");
 const { validateRequest } = require("../../middlewares/validate-request");
@@ -30,6 +31,9 @@ router.get("/one/:questionId", currentUser, currentsubs, getQuestionById);
 // put requests;
 router.put("/reorder", currentUser, currentsubs, reorderQuestions);
 router.put("/one/:questionId", currentUser, currentsubs, editQuestion);
+
+// patch
+router.patch("/:quizId/:questionId", currentUser, currentsubs, disableQuestion);
 
 // delete requests;
 router.delete("/:quizId/:questionId", currentUser, currentsubs, deleteQuestionFromQuiz);

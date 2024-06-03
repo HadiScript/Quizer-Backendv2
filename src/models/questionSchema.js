@@ -22,6 +22,8 @@ const questionSchema = new mongoose.Schema({
     },
   ],
 
+  disable: { type: Boolean, default: false },
+
   // For short answer questions, store the answer as a string
   answer: {
     type: String,

@@ -17,13 +17,6 @@ const addQuestionToQuiz = async (req, res) => {
     throw new BadRequestError("You can't access to this quiz");
   }
 
-  // options validation ***
-  // if (type === "multiple-choice") {
-  //   if (!options && options.length >= 2) {
-  //     throw new BadRequestError("Please add atlead 2 options");
-  //   }
-  // }
-
   const highestPositionQuestion = await QuestionModel.findOne({ quiz: quizId }).sort({ position: -1 }).limit(1);
 
   let newPosition = 0;
@@ -53,6 +46,7 @@ const getAllQuestionsForQuiz = async (req, res) => {
   const limits = req.query.limits;
   const searchTerm = req.query.searchTerm;
   const whichQuestions = req.query.whichQuestions;
+  const sortedBy = req.query.sortedBy;
 
   const quizExists = await QuizModel.findById({ _id: quizId });
   if (!quizExists) {
@@ -67,13 +61,15 @@ const getAllQuestionsForQuiz = async (req, res) => {
   if (searchTerm) {
     query = { ...query, text: new RegExp(searchTerm, "i") };
   }
+  if (sortedBy === "disable") query = { ...query, disable: true };
+  if (sortedBy === "enable") query = { ...query, disable: false };
 
   if (whichQuestions === "true") {
     const questions = await QuestionModel.find(query);
     const result = await AttachingToughestQuestions(questions, quizId, res);
     return res.status(200).json({ message: "Questions retrieved successfully", questions: result });
   } else {
-    const questions = await QuestionModel.find(query).sort({ position: 1 }).limit(parseInt(limits)).select("_id text position");
+    const questions = await QuestionModel.find(query).sort({ position: 1 }).limit(parseInt(limits)).select("_id text position disable");
 
     return res.status(200).json({
       message: "Questions retrieved successfully",
@@ -108,11 +104,11 @@ const reorderQuestions = async (req, res) => {
 
 const editQuestion = async (req, res) => {
   const { questionId } = req.params;
-  const { text, type, options, correctAnswer, answer } = req.body;
+  const { text, type, options, correctAnswer, answer, disable } = req.body;
 
   const question = await QuestionModel.findByIdAndUpdate(
     { _id: questionId },
-    { text, type, options, correctAnswer, answer },
+    { text, type, options, correctAnswer, answer, disable },
     { new: true }
   );
 
@@ -148,6 +144,33 @@ const deleteQuestionFromQuiz = async (req, res) => {
   res.json({ message: "Question deleted successfully" });
 };
 
+// patch
+const disableQuestion = async (req, res) => {
+  const { quizId, questionId } = req.params;
+  const { which } = req.query;
+
+  // Check if the quiz exists
+  const quizExists = await QuizModel.findById(quizId);
+  if (!quizExists) {
+    throw new BadRequestError("Quiz not found");
+  }
+
+  if (quizExists.creator.toString() !== req.currentUser.id.toString()) {
+    throw new BadRequestError("You can't access to this quiz");
+  }
+
+  // Check if the question exists and belongs to the quiz
+  const questionExists = await QuestionModel.findOne({ _id: questionId, quiz: quizId });
+  if (!questionExists) {
+    throw new BadRequestError("Question not found or does not belong to the specified quiz.");
+  }
+
+  // Delete the question
+  await QuestionModel.findOneAndUpdate({ _id: questionId }, { disable: which }, { new: true });
+
+  res.json({ message: "Done" });
+};
+
 module.exports = {
   // post requests;
   addQuestionToQuiz,
@@ -162,4 +185,7 @@ module.exports = {
 
   // delete requests;
   deleteQuestionFromQuiz,
+
+  // patch
+  disableQuestion,
 };

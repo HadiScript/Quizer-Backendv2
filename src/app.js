@@ -23,6 +23,8 @@ app.use("/api/attempt", require("./routers/attempt"));
 app.use("/api/report", require("./routers/report"));
 app.use("/api/ai", require("./routers/ai"));
 app.use("/api/template", require("./routers/template"));
+app.use("/api/home", require("./routers/home-pages"));
+app.use("/api/survey", require("./routers/survey"));
 
 if (process.env.NODE_ENV === "production") {
   console.log(process.env.NODE_ENV);

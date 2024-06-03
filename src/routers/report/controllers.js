@@ -65,12 +65,15 @@ const ReportOfQuiz = async (req, res) => {
     { name: "Fail", value: passFailCountsObject.Fail || 0 },
   ];
 
+  const highestScore = await QuizAttemptModel.find({ quiz: quizId }).select("studentDetails score isPass").sort({ score: -1 }).limit(10);
+
   res.json({
     totalAttempts,
     averageScore: averageScore[0]?.averageScore || 0,
     attempts,
     attemptedUsers,
     result,
+    highestScore,
   });
 };
 
@@ -100,9 +103,10 @@ const getToughestQuestion = async (req, res) => {
   res.json({ result });
 };
 
+// list of attempt users
 const AttemptUsers = async (req, res) => {
   // Extract query parameters or set default values
-  const quizId = req.params.quizId; 
+  const quizId = req.params.quizId;
   const page = parseInt(req.query.page) || 1;
   const pageSize = parseInt(req.query.pageSize) || 10;
   const searchEmail = req.query.email;
@@ -124,9 +128,11 @@ const AttemptUsers = async (req, res) => {
   // Send the response
   res.status(200).json({
     data: attempts,
-    total: total,
-    totalPages: Math.ceil(total / pageSize),
-    currentPage: page,
+    pagination: {
+      total: total,
+      pageSize: Math.ceil(total / pageSize),
+      page,
+    },
   });
 };
 
@@ -146,6 +152,7 @@ const PassingRatioForPeiChart = async (req, res) => {
   return res.status(200).json({ result });
 };
 
+// overall dashboard
 const reportForAll = async (req, res) => {
   const { from } = req.query;
 
@@ -169,7 +176,7 @@ const reportForAll = async (req, res) => {
       {
         $unwind: {
           path: "$attempts",
-          preserveNullAndEmptyArrays: true, 
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -210,8 +217,6 @@ const reportForAll = async (req, res) => {
   }
 };
 
-// passing Ratio, toughest questions
-//
 const reportForPerQuiz = async (req, res) => {
   const { quizId } = req.params;
 
@@ -226,6 +231,107 @@ const reportForPerQuiz = async (req, res) => {
   ];
 };
 
+const getHighScores = async (req, res) => {
+  try {
+    const quizId = req.params.quizId;
+    const result = await QuizAttemptModel.find({ quiz: quizId }).sort({ score: -1 }).limit(10); // You can adjust the limit as needed
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
+
+const getScoreDistribution = async (req, res) => {
+  try {
+    const quizId = req.params.quizId;
+    const result = await QuizAttemptModel.aggregate([
+      { $match: { quiz: mongoose.Types.ObjectId(quizId) } },
+      {
+        $bucket: {
+          groupBy: "$score",
+          boundaries: [0, 20, 40, 60, 80, 100], // Define your own boundaries
+          default: "Other",
+          output: {
+            count: { $sum: 1 },
+          },
+        },
+      },
+    ]);
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
+
+const getAverageTimeSpent = async (req, res) => {
+  try {
+    const quizId = req.params.quizId;
+    const result = await QuizAttemptModel.aggregate([
+      { $match: { quiz: new mongoose.Types.ObjectId(quizId) } },
+      {
+        $project: {
+          duration: { $subtract: ["$endTime", "$startTime"] },
+        },
+      },
+      {
+        $group: {
+          _id: "$quiz",
+          averageTimeSpent: { $avg: "$duration" },
+        },
+      },
+    ]);
+
+    if (result.length > 0) {
+      const averageDurationMs = result[0].averageTimeSpent;
+      const minutes = Math.floor(averageDurationMs / 60000);
+      const seconds = ((averageDurationMs % 60000) / 1000).toFixed(0);
+      const readableTime = `${minutes} minutes and ${seconds} seconds`;
+
+      res.status(200).send({ averageTimeSpent: readableTime });
+    } else {
+      res.status(200).send({ averageTimeSpent: "No data available" });
+    }
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
+
+const getCompletionRate = async (req, res) => {
+  try {
+    const quizId = req.params.quizId;
+    const result = await QuizAttemptModel.aggregate([
+      { $match: { quiz: new mongoose.Types.ObjectId(quizId) } },
+      {
+        $group: {
+          _id: "$quiz",
+          totalAttempts: { $sum: 1 },
+          completed: { $sum: { $cond: [{ $eq: ["$submitType", "within-time"] }, 1, 0] } },
+        },
+      },
+      {
+        $project: {
+          completionRate: { $divide: ["$completed", "$totalAttempts"] },
+          incompleteRate: { $subtract: [1, { $divide: ["$completed", "$totalAttempts"] }] },
+        },
+      },
+    ]);
+    if (result.length > 0) {
+      const completionData = [
+        { name: "Completed", value: result[0].completionRate * 100 },
+        { name: "Incomplete", value: result[0].incompleteRate * 100 },
+      ];
+      res.status(200).send(completionData);
+    } else {
+      res.status(200).send([
+        { name: "Completed", value: 0 },
+        { name: "Incomplete", value: 100 },
+      ]);
+    }
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
+
 module.exports = {
   // get requests;'
   reportForAll,
@@ -235,4 +341,9 @@ module.exports = {
   getToughestQuestion,
   AttemptUsers,
   PassingRatioForPeiChart,
+
+  getHighScores,
+  getScoreDistribution,
+  getAverageTimeSpent,
+  getCompletionRate,
 };

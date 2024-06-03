@@ -25,11 +25,12 @@ const login = async (req, res) => {
   );
 
   let user = {
+    userId: existingUser._id,
     name: existingUser.name,
     email: existingUser.email,
     role: existingUser.role,
     type: existingUser.subscriptionType,
-    logo: existingUser.logo,
+    logo: existingUser.logo,  
   };
   res.status(200).send({ user, token: userJwt });
 };
