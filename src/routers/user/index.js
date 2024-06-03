@@ -15,18 +15,18 @@ router.put("/g/settings", currentUser, currentsubs, updateGlobalSettings);
 router.put("/to/premium", currentUser, currentsubs, updateToPremium);
 
 // // post request
-router.post("/upload-logo", currentUser, currentsubs, logoUpload.single("image"), (req, res) => {
-  if (req.fileValidationError) {
-    throw new BadRequestError("Image size.");
-  }
-  uploadLogo(req, res);
-});
+// router.post("/upload-logo", currentUser, currentsubs, logoUpload.single("image"), (req, res) => {
+//   if (req.fileValidationError) {
+//     throw new BadRequestError("Image size.");
+//   }
+//   uploadLogo(req, res);
+// });
 
-router.post("/remove-logo", currentUser, currentsubs, logoUpload.single("image"), (req, res) => {
-  if (req.fileValidationError) {
-    throw new BadRequestError("Image size.");
-  }
-  deleteLogo(req, res);
-});
+// router.post("/remove-logo", currentUser, currentsubs, logoUpload.single("image"), (req, res) => {
+//   if (req.fileValidationError) {
+//     throw new BadRequestError("Image size.");
+//   }
+//   deleteLogo(req, res);
+// });
 
 module.exports = router;
