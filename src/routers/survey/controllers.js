@@ -2,8 +2,6 @@ const { default: slugify } = require("slugify");
 const { Survey, Response } = require("../../models/surveySchema");
 const { BadRequestError } = require("../../errors/bad-request-error");
 const { NotFoundError } = require("../../errors/not-found-error");
-const { fields } = require("../../config/helpers/uploadLogos");
-
 // POST
 const createSurvey = async (req, res) => {
   const { title, description } = req.body;

@@ -7,7 +7,7 @@ const fieldOptionsSchema = new Schema({
   value: { type: String, required: true },
 });
 
-// Define the schema for each field in the survey
+//  Define the schema for each field in the survey
 const fieldSchema = new Schema({
   type: {
     type: String,

@@ -13,6 +13,18 @@ const {
   submitSurveyResponse,
 } = require("./controllers");
 const { validateFormFields } = require("../../config/validates/FormFieldValidate");
+const {
+  getResponseDataByDate,
+  getSurveyFieldStats,
+  getAllFields,
+  getRadioFieldData,
+  getCheckboxFieldData,
+  getRateFieldData,
+  getDropdownFieldData,
+  getSurveyResponses,
+  getSingleResponse,
+  getFieldOverview,
+} = require("./dashbaord");
 
 const router = express.Router();
 
@@ -49,5 +61,25 @@ router.get("/attempt/:slug/:userId", gettingFieldsForAttempt);
 
 // POST
 router.post("/submit/:slug/:userId", submitSurveyResponse);
+
+// DASHBOARD
+// GET
+router.get("/dashboard/:slug", currentUser, currentsubs, getResponseDataByDate);
+router.get("/dashboard/:slug/stats", currentUser, currentsubs, getSurveyFieldStats);
+router.get("/dashboard/:slug/all-fields", currentUser, currentsubs, getAllFields);
+
+router.get("/dashboard/:slug/reponses", currentUser, currentsubs, getSurveyResponses);
+router.get("/dashboard/reponse/:responseId", currentUser, currentsubs, getSingleResponse);
+router.get("/dashboard/:slug/overview", currentUser, currentsubs, getFieldOverview);
+
+// PUT
+router.put("/dashboard/:slug/radio-rate", currentUser, currentsubs, getRadioFieldData);
+router.put("/dashboard/:slug/checkbox-rate", currentUser, currentsubs, getCheckboxFieldData);
+router.put("/dashboard/:slug/rating-rate", currentUser, currentsubs, getRateFieldData);
+router.put("/dashboard/:slug/dropdown-rate", currentUser, currentsubs, getDropdownFieldData);
+// getSingleResponse
+
+// getRadioFieldData
+// getRadioFields
 
 module.exports = router;
