@@ -452,6 +452,67 @@ const getFieldOverview = async (req, res) => {
   res.json(fieldOverviews);
 };
 
+// OVERALL
+const reportForAllSurveys = async (req, res) => {
+  const { from } = req.query;
+
+  const creatorId = new mongoose.Types.ObjectId(req.currentUser.id);
+
+  if (from === "summary") {
+    const totalSurveys = await Survey.countDocuments({ createdBy: creatorId });
+
+    const totalResponses = await Response.aggregate([
+      {
+        $lookup: {
+          from: "surveys", // Ensure this is the correct collection name
+          localField: "surveyId",
+          foreignField: "_id",
+          as: "surveyDetails",
+        },
+      },
+      {
+        $match: {
+          "surveyDetails.createdBy": creatorId,
+        },
+      },
+      {
+        $count: "totalResponses",
+      },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      totalSurveys: totalSurveys,
+      totalResponses: totalResponses.length > 0 ? totalResponses[0].totalResponses : 0,
+    });
+  } else if (from === "graph") {
+    const surveyResponses = await Survey.aggregate([
+      {
+        $match: {
+          createdBy: creatorId,
+        },
+      },
+      {
+        $lookup: {
+          from: "responses", // Make sure this is your collection name for responses
+          localField: "_id",
+          foreignField: "surveyId",
+          as: "responses",
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          attemptsCount: { $size: "$responses" },
+        },
+      },
+    ]);
+
+    res.json({ surveyResponses });
+  }
+};
+
 module.exports = {
   getResponseDataByDate,
   getSurveyFieldStats,
@@ -464,4 +525,5 @@ module.exports = {
   getSurveyResponses,
   getSingleResponse,
   getFieldOverview,
+  reportForAllSurveys,
 };

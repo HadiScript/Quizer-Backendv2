@@ -159,36 +159,66 @@ const reportForAll = async (req, res) => {
   const creatorId = new mongoose.Types.ObjectId(req.currentUser.id);
 
   if (from === "summary") {
-    const quizSummary = await QuizModel.aggregate([
-      {
-        $match: {
-          creator: creatorId,
-        },
-      },
-      {
-        $lookup: {
-          from: "quizAttemptSchema",
-          localField: "_id",
-          foreignField: "quiz",
-          as: "attempts",
-        },
-      },
-      {
-        $unwind: {
-          path: "$attempts",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
+    const totalQuizzes = await QuizModel.countDocuments({ creator: creatorId });
+
+    // Get total number of questions in quizzes created by this user
+    const totalQuestions = await QuestionModel.countDocuments({
+      quiz: { $in: (await QuizModel.find({ creator: creatorId }).select("_id").exec()).map((q) => q._id) },
+    }); 
+
+    // Get total number of enabled and disabled questions
+    const questionStats = await QuestionModel.aggregate([
+      { $match: { quiz: { $in: (await QuizModel.find({ creator: creatorId }).select("_id").exec()).map((q) => q._id) } } },
       {
         $group: {
-          _id: "$creator",
-          totalQuizzes: { $sum: 1 },
-          totalQuestions: { $sum: { $size: "$questions" } },
-          totalAttempts: { $sum: { $cond: [{ $gt: ["$attempts", null] }, 1, 0] } }, // Increment for each non-null attempt
+          _id: "$disable",
+          count: { $sum: 1 },
         },
       },
     ]);
-    return res.json({ summary: quizSummary[0] });
+
+    // Initialize default counts
+    let enabledQuestions = 0,
+      disabledQuestions = 0;
+    questionStats.forEach((item) => {
+      if (item._id) {
+        disabledQuestions = item.count;
+      } else {
+        enabledQuestions = item.count;
+      }
+    });
+
+    // Get total quiz attempts, pass and fail attempts for quizzes created by this user
+    const quizAttemptsStats = await QuizAttemptModel.aggregate([
+      { $match: { quiz: { $in: (await QuizModel.find({ creator: creatorId }).select("_id").exec()).map((q) => q._id) } } },
+      {
+        $group: {
+          _id: "$isPass",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Initialize default counts
+    let passAttempts = 0,
+      failAttempts = 0;
+    quizAttemptsStats.forEach((item) => {
+      if (item._id) {
+        passAttempts = item.count;
+      } else {
+        failAttempts = item.count;
+      }
+    });
+
+    res.json({
+      totalQuizzes,
+      totalQuestions,
+      enabledQuestions,
+      disabledQuestions,
+      totalAttempts: passAttempts + failAttempts,
+      passAttempts,
+      failAttempts,
+    });
   } else if (from === "graph") {
     const quizSummary = await QuizModel.aggregate([
       {

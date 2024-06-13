@@ -24,6 +24,7 @@ const {
   getSurveyResponses,
   getSingleResponse,
   getFieldOverview,
+  reportForAllSurveys,
 } = require("./dashbaord");
 
 const router = express.Router();
@@ -64,6 +65,7 @@ router.post("/submit/:slug/:userId", submitSurveyResponse);
 
 // DASHBOARD
 // GET
+router.get("/dashboard/main", currentUser, currentsubs, reportForAllSurveys);
 router.get("/dashboard/:slug", currentUser, currentsubs, getResponseDataByDate);
 router.get("/dashboard/:slug/stats", currentUser, currentsubs, getSurveyFieldStats);
 router.get("/dashboard/:slug/all-fields", currentUser, currentsubs, getAllFields);
