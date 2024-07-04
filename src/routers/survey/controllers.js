@@ -19,9 +19,9 @@ const createSurvey = async (req, res) => {
     createdBy: req.currentUser.id,
   });
 
-  await newSurvey.save();
+  const srvy = await newSurvey.save();
 
-  res.status(201).json({ message: "Survey has been created" });
+  res.status(201).json({ message: "Survey has been created", slug: srvy.slug });
 };
 
 // PUT

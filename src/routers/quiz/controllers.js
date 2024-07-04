@@ -36,18 +36,37 @@ const createQuizHelper = async (req, title, requiredFields, timeLimit, quizInstr
 const createQuiz = async (req, res) => {
   const { title, requiredFields, timeLimit, quizInstructions } = req.body;
 
-  let newQuiz = createQuizHelper(req, title, requiredFields, timeLimit, quizInstructions);
-  res.json({ message: "Quiz has been created", quiz: newQuiz });
+  let newQuiz = await createQuizHelper(req, title, requiredFields, timeLimit, quizInstructions);
+  console.log(newQuiz, "here is the things");
+  res.json({ message: "Quiz has been created", quiz: newQuiz?._id });
 };
 
 // get requests; --question remaining**
 const allQuizes = async (req, res) => {
-  const quizzes = await QuizModel.find({ creator: req.currentUser.id }).populate({
-    path: "questions",
-    options: { sort: { position: 1 } },
-  });
+  const page = parseInt(req.query.page) || 1;
+  const pageSize = parseInt(req.query.pageSize) || 10;
+  const search = req.query.search;
 
-  res.status(200).json({ quizzes });
+  const query = { creator: req.currentUser.id };
+  if (search) {
+    query.title = { $regex: new RegExp(search, "i") };
+  }
+
+  const skip = (page - 1) * pageSize;
+
+  const quizzes = await QuizModel.find(query).select("title questions createdAt").skip(skip).limit(pageSize).exec();
+
+  // Get the total count of documents matching the query
+  const total = await QuizModel.countDocuments(query);
+
+  res.status(200).json({
+    quizzes,
+    pagination: {
+      total: total,
+      pageSize: Math.ceil(total / pageSize),
+      page,
+    },
+  });
 };
 
 const quizById = async (req, res) => {
@@ -110,11 +129,12 @@ const updateQuizSettingsById = async (req, res) => {
     throw new BadRequestError("You can't access this quiz");
   }
 
-  if (user.subscriptionType === "free") {
-    if (quizAvailability || displaySetting || scoringType) {
-      throw new BadRequestError("Please update your account. You have right to perform this action.");
-    }
-  }
+  // UPGRAD TO PREMIUM
+  // if (user.subscriptionType === "free") {
+  //   if (quizAvailability || displaySetting || scoringType) {
+  //     throw new BadRequestError("Please update your account. You do not have right to perform this action.");
+  //   }
+  // }
 
   const quizSettings = {};
 

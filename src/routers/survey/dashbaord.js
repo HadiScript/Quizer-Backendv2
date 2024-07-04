@@ -398,7 +398,9 @@ const getSingleResponse = async (req, res) => {
     };
   });
 
-  res.json(detailedResponses);
+  // console.log(response?.respondedAt);
+
+  res.json({ responses: detailedResponses, at: response?.respondedAt });
 };
 
 const getFieldOverview = async (req, res) => {
