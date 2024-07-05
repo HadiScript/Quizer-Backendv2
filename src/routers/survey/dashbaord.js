@@ -272,7 +272,7 @@ const getRateFieldData = async (req, res) => {
       const averageRating = responseData.reduce((acc, cur) => acc + cur._id * cur.count, 0) / totalResponses;
 
       return {
-        fieldLabel: field.label,
+        fieldLabel: field?.label,
         averageRating: averageRating.toFixed(2),
         totalCount: totalResponses,
         count: responseData.map((item) => ({ name: item._id, value: item.count })),
