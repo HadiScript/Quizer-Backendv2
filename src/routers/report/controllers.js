@@ -34,7 +34,7 @@ const ReportOfQuiz = async (req, res) => {
               date: "$createdAt",
             },
           },
-          count: { $sum: 1 },
+          Response: { $sum: 1 },
         },
       },
       {
@@ -61,8 +61,8 @@ const ReportOfQuiz = async (req, res) => {
   }, {});
 
   const result = [
-    { name: "Pass", value: passFailCountsObject.Pass || 0 },
-    { name: "Fail", value: passFailCountsObject.Fail || 0 },
+    { name: "Pass", Count: passFailCountsObject.Pass || 0 },
+    { name: "Fail", Count: passFailCountsObject.Fail || 0 },
   ];
 
   const highestScore = await QuizAttemptModel.find({ quiz: quizId }).select("studentDetails score isPass").sort({ score: -1 }).limit(10);
@@ -164,7 +164,7 @@ const reportForAll = async (req, res) => {
     // Get total number of questions in quizzes created by this user
     const totalQuestions = await QuestionModel.countDocuments({
       quiz: { $in: (await QuizModel.find({ creator: creatorId }).select("_id").exec()).map((q) => q._id) },
-    }); 
+    });
 
     // Get total number of enabled and disabled questions
     const questionStats = await QuestionModel.aggregate([

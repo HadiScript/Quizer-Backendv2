@@ -130,11 +130,11 @@ const updateQuizSettingsById = async (req, res) => {
   }
 
   // UPGRAD TO PREMIUM
-  // if (user.subscriptionType === "free") {
-  //   if (quizAvailability || displaySetting || scoringType) {
-  //     throw new BadRequestError("Please update your account. You do not have right to perform this action.");
-  //   }
-  // }
+  if (user.subscriptionType === "free") {
+    if (quizAvailability || displaySetting || scoringType) {
+      throw new BadRequestError("Please update your account. You do not have right to perform this action.");
+    }
+  }
 
   const quizSettings = {};
 

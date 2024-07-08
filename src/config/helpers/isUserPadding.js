@@ -1,18 +1,22 @@
-function isUserPassing(questionLength, score, passingPercentage) {
+function isUserPassing(questionLength, score, passingPercentage, type) {
   // Calculate the passing score
 
-  console.log({
-    questionLength,
-    score,
-    passingPercentage,
-  });
+  // console.log({
+  //   questionLength,
+  //   score,
+  //   passingPercentage,
+  //   type,
+  // });
 
-  // const passingScore = (passingPercentage / 100) * questionLength;
-
-  // Check if the user's score is greater than or equal to the passing score
-  const isPassing = score >= passingPercentage;
-
-  return isPassing;
+  if (type === "percentage") {
+    const isPassing = score >= passingPercentage;
+    return isPassing;
+  } else {
+    let percentage = (score / questionLength) * 100;
+    const isPassing = percentage >= passingPercentage;
+    // console.log({ percentage, isPassing });
+    return isPassing;
+  }
 }
 
 module.exports = isUserPassing;

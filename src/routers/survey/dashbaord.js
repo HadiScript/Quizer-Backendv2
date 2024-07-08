@@ -41,7 +41,7 @@ const getResponseDataByDate = async (req, res) => {
       },
     ]);
 
-    const formattedData = data.map((item) => ({ date: item._id, value: item.value }));
+    const formattedData = data.map((item) => ({ date: item._id, Response: item.value }));
     res.json(formattedData);
   } catch (error) {
     res.status(500).send("Server error");

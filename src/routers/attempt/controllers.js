@@ -114,7 +114,7 @@ const finishQuiz = async (req, res) => {
     grade = convertScoreToGrade(score, totalQuestions);
   }
 
-  let passOrFail = isUserPassing(totalQuestions, score, passingScore);
+  let passOrFail = isUserPassing(totalQuestions, score, passingScore, scoringType);
 
   // Update the quiz attempt
   quizAttempt.responses = responses;
@@ -123,6 +123,8 @@ const finishQuiz = async (req, res) => {
 
   quizAttempt.endTime = new Date();
   quizAttempt.score = score;
+
+  // return;
   await quizAttempt.save();
 
   let _score = grade ? grade : score;
