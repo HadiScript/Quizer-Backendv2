@@ -2,11 +2,25 @@ const { default: slugify } = require("slugify");
 const { Survey, Response } = require("../../models/surveySchema");
 const { BadRequestError } = require("../../errors/bad-request-error");
 const { NotFoundError } = require("../../errors/not-found-error");
+const User = require("../../models/userSchema");
 // POST
 const createSurvey = async (req, res) => {
   const { title, description } = req.body;
 
   const isExist = await Survey.findOne({ slug: slugify(title), createdBy: req.currentUser.id });
+  const checker = await User.findById({ _id: req.currentUser.id }).select("subscriptionType");
+  const surveyCount = await Survey.countDocuments({ createdBy: req.currentUser.id });
+
+  if (checker.subscriptionType === "free") {
+    if (surveyCount === 10) {
+      throw new BadRequestError("Limit has exceeded");
+    }
+  }
+  if (checker.subscriptionType === "premium") {
+    if (surveyCount === 50) {
+      throw new BadRequestError("Limit has exceeded");
+    }
+  }
 
   if (isExist) {
     throw new BadRequestError("Already Exist, Please change the title");
@@ -51,11 +65,23 @@ const updateSurveyFields = async (req, res) => {
     const slug = req.params.slug;
     const userId = req.currentUser.id;
 
-    console.log("here is survey", slug);
     const survey = await Survey.findOne({ slug: slug, createdBy: userId });
+    const checker = await User.findById({ _id: userId }).select("subscriptionType");
 
     if (!survey) {
       throw new NotFoundError("Not Found!");
+    }
+
+    if (checker.subscriptionType === "free") {
+      if (survey.fields.length === 20) {
+        throw new BadRequestError("Limit has exceeded");
+      }
+    }
+
+    if (checker.subscriptionType === "premium") {
+      if (survey.fields.length === 30) {
+        throw new BadRequestError("Limit has exceeded");
+      }
     }
 
     console.log(req.body, "here is the things");
@@ -169,8 +195,21 @@ const submitSurveyResponse = async (req, res) => {
 
   // Check if the survey exists
   const survey = await Survey.findOne({ slug: slug, createdBy: userId });
+  const checker = await User.findOne({ _id: survey.createdBy });
+  const responseCount = await Response.countDocuments({ surveyId: survey._id });
   if (!survey) {
     throw new NotFoundError("Not found");
+  }
+
+  if (checker.subscriptionType === "free") {
+    if (responseCount === 500) {
+      throw new BadRequestError("Limit has exceeded");
+    }
+  }
+  if (checker.subscriptionType === "premium") {
+    if (responseCount === 2000) {
+      throw new BadRequestError("Limit has exceeded");
+    }
   }
 
   // Create a new response

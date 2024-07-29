@@ -10,11 +10,27 @@ const createQuizHelper = async (req, title, requiredFields, timeLimit, quizInstr
     throw new BadRequestError("Email must be included in required fields");
   }
 
+  const checker = await User.findById({ _id: req.currentUser.id }).select("subscriptionType");
   const userQuiz = await QuizModel.find({ creator: req.currentUser.id });
-  // console.log({ userQuiz });
   if (userQuiz.find((x) => x.slug.toLowerCase() === slugify(title).toLowerCase())) {
     throw new BadRequestError("This quiz is already exist.");
   }
+
+  if (checker.subscriptionType === "premium") {
+    if (userQuiz.length === 50) {
+      throw new BadRequestError("You have exceed the limit.");
+    }
+  }
+
+  if (checker.subscriptionType === "free") {
+    if (userQuiz.length === 10) {
+      throw new BadRequestError("You have exceed the limit.");
+    }
+  }
+
+  // console.log(checker, userQuiz.length);
+
+  // console.log({ userQuiz });
 
   const newQuiz = new QuizModel({
     creator: req.currentUser.id,
@@ -30,6 +46,7 @@ const createQuizHelper = async (req, title, requiredFields, timeLimit, quizInstr
   await newQuiz.save();
 
   return newQuiz;
+  // return {};
 };
 
 // post requests;
@@ -37,7 +54,7 @@ const createQuiz = async (req, res) => {
   const { title, requiredFields, timeLimit, quizInstructions } = req.body;
 
   let newQuiz = await createQuizHelper(req, title, requiredFields, timeLimit, quizInstructions);
-  console.log(newQuiz, "here is the things");
+
   res.json({ message: "Quiz has been created", quiz: newQuiz?._id });
 };
 

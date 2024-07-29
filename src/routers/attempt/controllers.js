@@ -21,6 +21,25 @@ const startQuiz = async (req, res) => {
   if (!quiz) {
     throw new BadRequestError("Quiz not found");
   }
+  const quizAttempts = await QuizAttemptModel.countDocuments({
+    quiz: quizId,
+  });
+  const checker = await User.findById({ _id: quiz.creator }).select("subscriptionType");
+  // console.log(checker.subscriptionType, quizAttempts);
+
+  if (checker.subscriptionType === "premium") {
+    if (quizAttempts === 500) {
+      throw new BadRequestError("Limit has exceeded.");
+    }
+  }
+
+  if (checker.subscriptionType === "free") {
+    if (quizAttempts === 100) {
+      throw new BadRequestError("Limit has exceeded.");
+    }
+  }
+
+  // return;
 
   // Validate student details against required fields
   const missingFields = quiz.requiredFields.filter((field) => !studentDetails[field]);

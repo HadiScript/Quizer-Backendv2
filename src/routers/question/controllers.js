@@ -2,16 +2,33 @@ const AttachingToughestQuestions = require("../../config/helpers/AttachingToughe
 const { BadRequestError } = require("../../errors/bad-request-error");
 const QuestionModel = require("../../models/questionSchema");
 const QuizModel = require("../../models/quizSchema");
+const User = require("../../models/userSchema");
 
 // posts requests;
 const addQuestionToQuiz = async (req, res) => {
   const { quizId } = req.params;
   const { text, type, options, correctAnswer, answer } = req.body;
 
+  const checker = await User.findById({ _id: req.currentUser.id }).select("subscriptionType");
   const quizExist = await QuizModel.findOne({ _id: quizId });
+
   if (!quizExist) {
     throw new BadRequestError("Quiz not found");
   }
+
+  if (checker.subscriptionType === "premium") {
+    if (quizExist.questions.length === 30) {
+      throw new BadRequestError("You have exceed the limit.");
+    }
+  }
+
+  if (checker.subscriptionType === "free") {
+    if (quizExist.questions.length === 20) {
+      throw new BadRequestError("You have exceed the limit.");
+    }
+  }
+
+  console.log(checker.subscriptionType, quizExist.questions.length);
 
   if (quizExist.creator.toString() !== req.currentUser.id.toString()) {
     throw new BadRequestError("You can't access to this quiz");
